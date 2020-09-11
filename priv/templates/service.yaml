@@ -1,0 +1,13 @@
+---
+apiVersion: apps/v1
+kind: Service
+apiVersion: v1
+metadata:
+  name: <%= @app_name %>-service
+spec:
+  selector:
+    app: <%= @app_name %>
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 4000

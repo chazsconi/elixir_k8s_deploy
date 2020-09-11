@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <%= @app_name %>
+  labels:
+    app: <%= @app_name %>
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <%= @app_name %>
+  template:
+    metadata:
+      labels:
+        app: <%= @app_name %>
+        deployment_id: '<%= @deployment_id %>'
+    spec:
+      containers:
+      - name: <%= @app_name %>
+        image: <%= @docker_image %>
+        env:
+        <%= for {k, v} <- @env_vars do %>
+        - name: <%= k %>
+          value: '<%= v %>'
+        <% end %>
+        ports:
+        - containerPort: 4000
+        imagePullPolicy: Always
+      <%= if @image_pull_secrets do %>
+      imagePullSecrets:
+      <%= for secret <- @image_pull_secrets do %>
+      - name: <%= secret %>
+      <% end %>
+      <% end %>
+      restartPolicy: Always

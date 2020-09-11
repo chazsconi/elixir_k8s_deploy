@@ -1,0 +1,25 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: <%= @app_name %>-ingress
+  annotations:
+    cert-manager.io/issuer: <%= @cert_manager_issuer %>
+    <%= if @from_to_www_redirect? do %>
+    nginx.ingress.kubernetes.io/from-to-www-redirect: 'true'
+    <% end %>
+spec:
+  tls:
+  - hosts:
+    <%= for host <- @hosts do %>
+    - <%= host %>
+    <% end %>
+    secretName: <%= @app_name %>-tls
+  rules:
+  - host: <%= @host %>
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: <%= @app_name %>-service
+          servicePort: 80
