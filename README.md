@@ -76,3 +76,14 @@ rules for this app.
 ### Deploying to multiple contexts
 
 You can also specify `:context` as a list.  All K8S resources will then be deployed to each context in turn.
+
+## TODO
+
+* Run `git push origin master:production` after deploy
+* Have option to ask for key press before deploying
+* Support migration job
+* If custom ingress `:host` is not relevant but should still deploy ingress
+* Support `configmap`
+* Support different environments e.g. `mix k8s.deploy staging` with an environment setting and overrides in config
+* Block until deploy complete
+* Support probes in deployment
