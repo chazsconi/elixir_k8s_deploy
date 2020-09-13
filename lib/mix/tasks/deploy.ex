@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.K8s.Deploy do
   @moduledoc """
-  Builds the application using `docker_build` and the deploys to K8S
+  Builds the application using `docker_build` and then deploys to K8S
   ```
     mix k8s.deploy [deploy-env] [options]
   ```
@@ -43,13 +43,10 @@ defmodule Mix.Tasks.K8s.Deploy do
     Logger.debug("Using env #{env}")
     Logger.debug("Args: " <> inspect(args))
 
-    case Deploy.run(
-           env: env,
-           build?: "--skip-build" not in flags,
-           dry_run?: "--dry-run" in flags
-         ) do
-      0 -> Mix.shell().info("Deploy done")
-      n -> Mix.raise("Build failed. Exit code #{n}")
-    end
+    Deploy.run(
+      env: env,
+      build?: "--skip-build" not in flags,
+      dry_run?: "--dry-run" in flags
+    )
   end
 end

@@ -10,10 +10,13 @@ defmodule K8SDeploy.Deploy do
     Logger.debug("Config: " <> inspect(config))
     Logger.debug("Appdir: " <> Application.app_dir(:k8s_deploy))
 
-    print_step("Starting K8S Deploy..")
-
     if opts[:build?] do
-      DockerBuild.Build.run(opts)
+      print_step("Starting docker_build")
+
+      if DockerBuild.Build.run(opts) != 0 do
+        Mix.raise("docker_build failed")
+      end
+
       print_step("Pushing docker image")
       push_image(config)
     else
@@ -22,7 +25,7 @@ defmodule K8SDeploy.Deploy do
 
     print_step("Deploying to K8S")
     deploy(config, opts[:dry_run?])
-    0
+    print_step("Deploy complete")
   end
 
   defp deploy(config, dry_run?) do
@@ -121,14 +124,20 @@ defmodule K8SDeploy.Deploy do
       print("Running: #{cmd}")
       print("Output:")
       print(IO.ANSI.italic())
-      Mix.Shell.IO.cmd(cmd)
+      shell_cmd(cmd)
       print(IO.ANSI.reset())
     end)
   end
 
   defp push_image(config) do
     url = Config.build_config(config, :docker_image)
-    Mix.Shell.IO.cmd("docker push #{url}", [])
+    shell_cmd("docker push #{url}", [])
+  end
+
+  defp shell_cmd(cmd, params \\ []) do
+    if Mix.Shell.IO.cmd(cmd, params) != 0 do
+      Mix.raise("#{cmd} failed")
+    end
   end
 
   defp deployment_id, do: DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string()

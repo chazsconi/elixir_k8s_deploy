@@ -104,6 +104,11 @@ defmodule K8SDeploy.Config do
 
   @doc "Env vars for deployment"
   def env_vars(context) do
-    Map.merge(%{"PORT" => "4000"}, config(context, :env_vars, %{}))
+    case config(context, :host) do
+      host when is_binary(host) -> %{"URL_HOST" => host}
+      _ -> %{}
+    end
+    |> Map.merge(%{"PORT" => "4000"})
+    |> Map.merge(config(context, :env_vars, %{}))
   end
 end

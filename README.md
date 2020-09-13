@@ -2,8 +2,7 @@
 
 Library for deploying Elixir web apps to Kubernetes.  Used in combination with [`docker_build`](https://hex.pm/packages/docker_build) library.
 
-Will build a docker image of your app, push it and then deploy it to K8S by creating a K8S deployment, service and
-ingress for your app. It will also request a *Letsencrypt* SSL cert for your app.
+It will build a docker image of your app, push it and then deploy it to K8S by creating a K8S `deployment`, `service` and `ingress` for your app. It will also request a *Letsencrypt* SSL cert for your app.
 
 ## Prerequisites
 
@@ -16,8 +15,7 @@ ingress for your app. It will also request a *Letsencrypt* SSL cert for your app
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `elixir_k8s_deploy` to your list of dependencies in `mix.exs`:
+Add to `mix.exs`:
 
 ```elixir
 def deps do
@@ -52,7 +50,11 @@ To build a docker image and deploy:
 mix k8s.deploy
 ```
 
-See `mix help k8s.deploy` for options
+For additional options run:
+
+```bash
+mix help k8s.deploy
+```
 
 ## Advanced usage
 
@@ -60,12 +62,15 @@ See `mix help k8s.deploy` for options
 
 The following additional config values are available:
 
-  * `:from_to_www_redirect?` - if your want an automatic redirection from the non-`www` version of your site to the `www` version. Defaults to `true` if the host starts with `www`.  Raises if set and host does not start with `www`.
-  * `:env_vars` - Map of environment variables that will be set in the K8S deployment. e.g. `%{"FOO" => "BAR"}`
+  * `:from_to_www_redirect?` - if your want the `ingress` to perform an automatic redirection from the non-`www` version of your site to the `www` version. Defaults to `true` if the host starts with `www`.  Raises if set and host does not start with `www`.
+  * `:env_vars` - Map of environment variables that will be set in the K8S `deployment`. e.g. `%{"FOO" => "BAR"}`.  The following
+  environment variables are automatically injected:
+    * `PORT` - set to `4000`
+    * `URL_HOST` - set to the `:host` value in the config (if set)
 
 ### Deploying without an ingress
 
-If you omit the `host` field, no ingress will be deployed.  You may use this if another app deploys the ingress
+If you omit the `host` field, no ingress will be deployed.  You might use this if another app deploys the ingress
 rules for this app.
 
 ### Deploying to multiple contexts
