@@ -27,38 +27,63 @@ defmodule K8SDeploy.Deploy do
 
   defp deploy(config, dry_run?) do
     []
-    |> add_resource("deployment", config)
-    |> add_resource("service", config)
-    |> add_resource("ingress", config)
+    |> add_deployment(config)
+    |> add_service(config)
+    |> add_ingress(config)
     |> Enum.join("\n")
-    |> replace_vars(config)
     |> kubectl_apply(config, dry_run?)
   end
 
-  defp replace_vars(contents, config) do
+  defp replace_vars(contents, config, assigns) do
     contents
     |> EEx.eval_string(
       [
-        assigns: [
-          deployment_id: deployment_id(),
-          app_name: Config.app_name(config),
-          docker_image: Config.build_config(config, :docker_image),
-          image_pull_secrets: Config.config!(config, :image_pull_secrets),
-          cert_manager_issuer: Config.config!(config, :cert_manager_issuer),
-          from_to_www_redirect?: Config.from_to_www_redirect?(config),
-          host: Config.config!(config, :host),
-          hosts: Config.hosts(config),
-          env_vars: Config.env_vars(config)
-        ]
+        assigns:
+          [
+            deployment_id: deployment_id(),
+            app_name: Config.app_name(config)
+          ] ++ assigns
       ],
       trim: true
     )
   end
 
-  defp add_resource(resources, name, config) do
+  defp add_deployment(resources, config) do
+    resources
+    |> add_resource("deployment", config,
+      docker_image: Config.build_config(config, :docker_image),
+      image_pull_secrets: Config.config!(config, :image_pull_secrets),
+      env_vars: Config.env_vars(config)
+    )
+  end
+
+  defp add_service(resources, config) do
+    resources
+    |> add_resource("service", config, [])
+  end
+
+  defp add_ingress(resources, config) do
+    # Only add ingress if the host is specified
+    case Config.config(config, :host) do
+      nil ->
+        resources
+
+      host ->
+        resources
+        |> add_resource("ingress", config,
+          host: host,
+          cert_manager_issuer: Config.config!(config, :cert_manager_issuer),
+          from_to_www_redirect?: Config.from_to_www_redirect?(config),
+          hosts: Config.hosts(config)
+        )
+    end
+  end
+
+  defp add_resource(resources, name, config, assigns) do
     resource =
       resource_path(name, config)
       |> File.read!()
+      |> replace_vars(config, assigns)
 
     resources ++ [resource]
   end
@@ -80,15 +105,25 @@ defmodule K8SDeploy.Deploy do
     Logger.debug("Writing apply file to : #{path}")
     File.write!(path, contents)
 
-    cmd =
-      "kubectl --context=#{Config.config!(config, :context)} apply -f #{path}" <>
-        if dry_run?, do: " --dry-run=true", else: ""
+    contexts =
+      case Config.config!(config, :context) do
+        contexts when is_list(contexts) -> contexts
+        context when is_binary(context) -> [context]
+      end
 
-    print("Running: #{cmd}")
-    print("Output:")
-    print(IO.ANSI.italic())
-    Mix.Shell.IO.cmd(cmd)
-    print(IO.ANSI.reset())
+    Enum.each(contexts, fn context ->
+      print_step("Deploying to context: #{context}")
+
+      cmd =
+        "kubectl --context=#{context} apply -f #{path}" <>
+          if dry_run?, do: " --dry-run=true", else: ""
+
+      print("Running: #{cmd}")
+      print("Output:")
+      print(IO.ANSI.italic())
+      Mix.Shell.IO.cmd(cmd)
+      print(IO.ANSI.reset())
+    end)
   end
 
   defp push_image(config) do
@@ -99,7 +134,7 @@ defmodule K8SDeploy.Deploy do
   defp deployment_id, do: DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string()
 
   defp print_step(message) do
-    Mix.Shell.IO.info("\n" <> IO.ANSI.cyan() <> message <> IO.ANSI.reset())
+    Mix.Shell.IO.info("\n" <> IO.ANSI.green() <> message <> IO.ANSI.reset())
   end
 
   defp print(message) do

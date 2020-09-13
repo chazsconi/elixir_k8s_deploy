@@ -62,3 +62,12 @@ The following additional config values are available:
 
   * `:from_to_www_redirect?` - if your want an automatic redirection from the non-`www` version of your site to the `www` version. Defaults to `true` if the host starts with `www`.  Raises if set and host does not start with `www`.
   * `:env_vars` - Map of environment variables that will be set in the K8S deployment. e.g. `%{"FOO" => "BAR"}`
+
+### Deploying without an ingress
+
+If you omit the `host` field, no ingress will be deployed.  You may use this if another app deploys the ingress
+rules for this app.
+
+### Deploying to multiple contexts
+
+You can also specify `:context` as a list.  All K8S resources will then be deployed to each context in turn.
