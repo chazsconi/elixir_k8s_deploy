@@ -2,7 +2,7 @@
 
 Library for deploying Elixir web apps to Kubernetes.  Used in combination with [`docker_build`](https://hex.pm/packages/docker_build) library.
 
-It will build a docker image of your app, push it and then deploy it to K8S by creating a K8S `deployment`, `service` and `ingress` for your app. It will also request a *Letsencrypt* SSL cert for your app.
+It will build a docker image of your app, push it and then deploy it to K8S by creating a K8S `Deployment`, `Service` and `Ingress` for your app. It will also request a *Letsencrypt* SSL cert for your app.
 
 ## Prerequisites
 
@@ -62,11 +62,31 @@ mix help k8s.deploy
 
 The following additional config values are available:
 
-  * `:from_to_www_redirect?` - if your want the `ingress` to perform an automatic redirection from the non-`www` version of your site to the `www` version. Defaults to `true` if the host starts with `www`.  Raises if set and host does not start with `www`.
-  * `:env_vars` - Map of environment variables that will be set in the K8S `deployment`. e.g. `%{"FOO" => "BAR"}`.  The following
+  * `:from_to_www_redirect?` - if your want the `Ingress` to perform an automatic redirection from the non-`www` version of your site to the `www` version. Defaults to `true` if the host starts with `www`.  Raises if set and host does not start with `www`.
+  * `:env_vars` - Map of environment variables that will be set in the K8S `Deployment`. e.g. `%{"FOO" => "BAR"}`.  The following
   environment variables are automatically injected:
     * `PORT` - set to `4000`
     * `URL_HOST` - set to the `:host` value in the config (if set)
+
+### Using a ConfigMap for environment variables
+
+Instead of providing environment variables via the `:env_vars` key, you can provide a K8S `ConfigMap` in the
+`deploy/k8s` folder with the name `configmap-prod.yaml`.  (If using a different environment change `prod` to match).
+
+The name of the `ConfigMap` must match the `:app_name` key specified in the `docker_build` config, with the suffix `-configmap`.
+This will be referenced using `envFrom` in the `Deployment`.
+
+For example:
+```yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myapp-configmap
+data:
+  FOO: BAR
+  FOO2: BAR2
+```
 
 ### Deploying without an ingress
 
@@ -83,7 +103,6 @@ You can also specify `:context` as a list.  All K8S resources will then be deplo
 * Have option to ask for key press before deploying
 * Support migration job
 * If custom ingress `:host` is not relevant but should still deploy ingress
-* Support `configmap`
 * Support different environments e.g. `mix k8s.deploy staging` with an environment setting and overrides in config
 * Block until deploy complete
 * Support probes in deployment

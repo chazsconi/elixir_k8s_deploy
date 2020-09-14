@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,6 +20,11 @@ spec:
       containers:
       - name: <%= @app_name %>
         image: <%= @docker_image %>
+        <%= if @configmap? do %>
+        envFrom:
+        - configMapRef:
+            name: <%= @app_name %>-configmap
+        <% end %>
         env:
         <%= for {k, v} <- @env_vars do %>
         - name: <%= k %>

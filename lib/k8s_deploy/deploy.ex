@@ -30,9 +30,11 @@ defmodule K8SDeploy.Deploy do
 
   defp deploy(config, dry_run?) do
     []
+    |> add_configmap(config)
     |> add_deployment(config)
     |> add_service(config)
     |> add_ingress(config)
+    |> Enum.map(fn {_name, contents} -> contents end)
     |> Enum.join("\n")
     |> kubectl_apply(config, dry_run?)
   end
@@ -56,13 +58,19 @@ defmodule K8SDeploy.Deploy do
     |> add_resource("deployment", config,
       docker_image: Config.build_config(config, :docker_image),
       image_pull_secrets: Config.config!(config, :image_pull_secrets),
-      env_vars: Config.env_vars(config)
+      env_vars: Config.env_vars(config),
+      configmap?: has_resource?(resources, "configmap")
     )
   end
 
   defp add_service(resources, config) do
     resources
     |> add_resource("service", config, [])
+  end
+
+  defp add_configmap(resources, config) do
+    resources
+    |> add_resource("configmap", config, [], optional?: true)
   end
 
   defp add_ingress(resources, config) do
@@ -82,23 +90,46 @@ defmodule K8SDeploy.Deploy do
     end
   end
 
-  defp add_resource(resources, name, config, assigns) do
-    resource =
-      resource_path(name, config)
-      |> File.read!()
-      |> replace_vars(config, assigns)
+  defp add_resource(resources, name, config, assigns, opts \\ []) do
+    case resource_path(name, config, opts[:optional?]) do
+      nil ->
+        resources
 
-    resources ++ [resource]
+      path ->
+        resource =
+          path
+          |> File.read!()
+          |> verify_yaml_format(path)
+          |> replace_vars(config, assigns)
+
+        resources ++ [{name, resource}]
+    end
   end
 
-  defp resource_path(name, config) do
+  defp verify_yaml_format(contents, path) do
+    case contents do
+      "---\n" <> _ -> contents
+      _ -> Mix.raise("File #{path} does not start with '---'")
+    end
+  end
+
+  defp has_resource?(resources, search) do
+    Enum.any?(resources, fn {name, _contents} -> name == search end)
+  end
+
+  defp resource_path(name, config, optional?) do
     project_path = "deploy/k8s/#{name}-#{Config.config(config, :env)}.yaml"
 
     if File.exists?(project_path) do
       project_path
     else
-      Logger.debug("No #{name} file at: #{project_path} - using library version")
-      Application.app_dir(:k8s_deploy, "priv/templates/#{name}.yaml")
+      if optional? do
+        Logger.debug("No #{name} file at: #{project_path} - skipping")
+        nil
+      else
+        Logger.debug("No #{name} file at: #{project_path} - using library version")
+        Application.app_dir(:k8s_deploy, "priv/templates/#{name}.yaml")
+      end
     end
   end
 
