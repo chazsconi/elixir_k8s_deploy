@@ -1,0 +1,34 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: <%= @job_name %>
+  labels:
+    app: <%= @app_name %>-migrate
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      activeDeadlineSeconds: 600
+      <%= if @image_pull_secrets do %>
+      imagePullSecrets:
+      <%= for secret <- @image_pull_secrets do %>
+      - name: <%= secret %>
+      <% end %>
+      <% end %>
+      containers:
+      - name: migrate
+        image: <%= @docker_image %>
+        imagePullPolicy: Always
+        command: ["/opt/app/bin/<%= @app_name %>", "eval", "<%= @migrate_expr %>"]
+        <%= if @configmap? do %>
+        envFrom:
+        - configMapRef:
+            name: <%= @app_name %>-configmap
+        <% end %>
+        env:
+        <%= for {k, v} <- @env_vars do %>
+        - name: <%= k %>
+          value: '<%= v %>'
+        <% end %>
+

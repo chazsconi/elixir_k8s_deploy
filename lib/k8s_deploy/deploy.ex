@@ -23,9 +23,72 @@ defmodule K8SDeploy.Deploy do
       print("Skipping docker build")
     end
 
-    print_step("Deploying to K8S")
-    deploy(config, opts[:dry_run?])
-    print_step("Deploy complete")
+    if Config.migrator(config) do
+      if opts[:migrate?] do
+        print_step("Running migrations")
+        run_migrations(config, opts[:dry_run?], opts[:clean_migrations?])
+        print_step("Migrations complete")
+      else
+        print("Skipping migrations")
+      end
+    end
+
+    if opts[:deploy?] do
+      print_step("Deploying to K8S")
+      deploy(config, opts[:dry_run?])
+      print_step("Deploy complete")
+    else
+      print("Skipping deploy")
+    end
+
+    print_step("FINISHED")
+  end
+
+  @doc "Cleans all migrations for the app"
+  def clean_all_migrations(args) do
+    config = Config.load_from_application_env(args)
+
+    each_context(config, fn context ->
+      print_step("Cleaning migrations in context: #{context}")
+
+      cmd = "kubectl --context=#{context} delete job -l app=#{Config.app_name(config)}-migrate"
+
+      shell_cmd(cmd)
+    end)
+  end
+
+  defp clean_migrations(config) do
+    each_context(config, fn context ->
+      print_step("Cleaning migrations context: #{context}")
+
+      cmd = "kubectl --context=#{context} delete job #{migration_job_name(config)}"
+
+      shell_cmd(cmd)
+    end)
+  end
+
+  defp wait_migrations(config) do
+    each_context(config, fn context ->
+      print_step("Waiting for migrations to complete in context: #{context}")
+
+      cmd =
+        "kubectl --context=#{context} wait --timeout=60s " <>
+          "--for=condition=complete job/#{migration_job_name(config)}"
+
+      shell_cmd(cmd)
+    end)
+  end
+
+  defp run_migrations(config, dry_run?, clean_migrations?) do
+    []
+    |> add_configmap(config)
+    |> add_migration_job(config)
+    |> kubectl_apply(config, dry_run?)
+
+    if not dry_run? do
+      wait_migrations(config)
+      if clean_migrations?, do: clean_migrations(config)
+    end
   end
 
   defp deploy(config, dry_run?) do
@@ -34,8 +97,6 @@ defmodule K8SDeploy.Deploy do
     |> add_deployment(config)
     |> add_service(config)
     |> add_ingress(config)
-    |> Enum.map(fn {_name, contents} -> contents end)
-    |> Enum.join("\n")
     |> kubectl_apply(config, dry_run?)
   end
 
@@ -45,7 +106,7 @@ defmodule K8SDeploy.Deploy do
       [
         assigns:
           [
-            deployment_id: deployment_id(),
+            deployment_id: Config.deployment_id(config),
             app_name: Config.app_name(config)
           ] ++ assigns
       ],
@@ -88,6 +149,24 @@ defmodule K8SDeploy.Deploy do
           hosts: Config.hosts(config)
         )
     end
+  end
+
+  defp add_migration_job(resources, config) do
+    {mod, fun, args} = Config.migrator(config)
+
+    resources
+    |> add_resource("migration-job", config,
+      docker_image: Config.build_config(config, :docker_image),
+      image_pull_secrets: Config.config!(config, :image_pull_secrets),
+      env_vars: Config.env_vars(config),
+      configmap?: has_resource?(resources, "configmap"),
+      job_name: migration_job_name(config),
+      migrate_expr: "apply(#{inspect(mod)}, #{inspect(fun)}, #{inspect(args)})"
+    )
+  end
+
+  defp migration_job_name(config) do
+    "#{Config.app_name(config)}-migrate-#{Config.deployment_id(config)}"
   end
 
   defp add_resource(resources, name, config, assigns, opts \\ []) do
@@ -133,31 +212,36 @@ defmodule K8SDeploy.Deploy do
     end
   end
 
-  defp kubectl_apply(contents, config, dry_run?) do
-    path = Path.join(System.tmp_dir(), deployment_id() <> ".yaml")
+  defp kubectl_apply(resources, config, dry_run?) do
+    contents =
+      resources
+      |> Enum.map(fn {_name, contents} -> contents end)
+      |> Enum.join("\n")
+
+    path = Path.join(System.tmp_dir(), Config.deployment_id(config) <> ".yaml")
     Logger.debug("File contents:\n#{contents}")
     Logger.debug("Writing apply file to : #{path}")
     File.write!(path, contents)
 
-    contexts =
-      case Config.config!(config, :context) do
-        contexts when is_list(contexts) -> contexts
-        context when is_binary(context) -> [context]
-      end
-
-    Enum.each(contexts, fn context ->
+    each_context(config, fn context ->
       print_step("Deploying to context: #{context}")
 
       cmd =
         "kubectl --context=#{context} apply -f #{path}" <>
           if dry_run?, do: " --dry-run=true", else: ""
 
-      print("Running: #{cmd}")
-      print("Output:")
-      print(IO.ANSI.italic())
       shell_cmd(cmd)
-      print(IO.ANSI.reset())
     end)
+  end
+
+  defp each_context(config, fun) do
+    contexts =
+      case Config.config!(config, :context) do
+        contexts when is_list(contexts) -> contexts
+        context when is_binary(context) -> [context]
+      end
+
+    Enum.each(contexts, fun)
   end
 
   defp push_image(config) do
@@ -166,12 +250,16 @@ defmodule K8SDeploy.Deploy do
   end
 
   defp shell_cmd(cmd, params \\ []) do
+    print("Running: #{cmd} #{inspect(params)}")
+    print("Output:")
+    print(IO.ANSI.italic())
+
     if Mix.Shell.IO.cmd(cmd, params) != 0 do
       Mix.raise("#{cmd} failed")
     end
-  end
 
-  defp deployment_id, do: DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string()
+    print(IO.ANSI.reset())
+  end
 
   defp print_step(message) do
     Mix.Shell.IO.info("\n" <> IO.ANSI.green() <> message <> IO.ANSI.reset())

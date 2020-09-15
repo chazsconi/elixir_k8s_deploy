@@ -24,6 +24,10 @@ defmodule K8SDeploy.Config do
       config
       |> Keyword.delete(:plugins)
       |> Keyword.put(:env, env)
+      |> Keyword.put(
+        :deployment_id,
+        DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string()
+      )
 
     %Config{
       base_config: base_config,
@@ -77,6 +81,9 @@ defmodule K8SDeploy.Config do
   @doc "Name of the app"
   def app_name(context), do: config(context, :app_name, build_config(context, :app_name))
 
+  @doc "deployment_id - generated from datestamp"
+  def deployment_id(context), do: config(context, :deployment_id)
+
   @doc "Selected `MIX_ENV`"
   def mix_env(context), do: config(context, :env)
 
@@ -110,5 +117,20 @@ defmodule K8SDeploy.Config do
     end
     |> Map.merge(%{"PORT" => "4000"})
     |> Map.merge(config(context, :env_vars, %{}))
+  end
+
+  @doc "Gets the mfa for the migrator"
+  def migrator(context) do
+    case config(context, :migrator) do
+      nil ->
+        nil
+
+      mod when is_atom(mod) ->
+        {mod, :migrate, []}
+
+      {mod, fun, args} ->
+        {mod, fun, args}
+        raise ":migrator must be either a module with a :migrate/0 function or a mfa"
+    end
   end
 end

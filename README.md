@@ -67,6 +67,7 @@ The following additional config values are available:
   environment variables are automatically injected:
     * `PORT` - set to `4000`
     * `URL_HOST` - set to the `:host` value in the config (if set)
+  * `:migrator` - Module name or mfa tuple for running migrations.  See *"Running Migrations"* below.
 
 ### Using a ConfigMap for environment variables
 
@@ -88,6 +89,14 @@ data:
   FOO2: BAR2
 ```
 
+### Running migrations
+
+To run migrations set the `:migrator` config key to either a module name, e.g `MyApp.Release` which contains a `migrate/0` function,
+or a mfa, e.g. `{MyApp.Release, :migrate, []}`.  You can create the necessary code by following the recommendation
+in [Phoenix](https://hexdocs.pm/phoenix/releases.html#ecto-migrations-and-custom-commands).
+
+A K8S `Job` will be created using the same docker image. It will execute the migrate function and run to completion before the deploy continutes.  Any `ConfigMap` or vars in `:env_vars` will be available in to the `Pod` container that the job creates.
+
 ### Deploying without an ingress
 
 If you omit the `host` field, no ingress will be deployed.  You might use this if another app deploys the ingress
@@ -101,7 +110,6 @@ You can also specify `:context` as a list.  All K8S resources will then be deplo
 
 * Run `git push origin master:production` after deploy
 * Have option to ask for key press before deploying
-* Support migration job
 * If custom ingress `:host` is not relevant but should still deploy ingress
 * Support different environments e.g. `mix k8s.deploy staging` with an environment setting and overrides in config
 * Block until deploy complete
