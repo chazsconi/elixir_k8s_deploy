@@ -99,18 +99,27 @@ A K8S `Job` will be created using the same docker image. It will execute the mig
 
 ### Deploying without an ingress
 
-If you omit the `host` field, no ingress will be deployed.  You might use this if another app deploys the ingress
+If you omit the `host` field, no ingress will be deployed (unless you have a custom template - see below).  You might use this if another app deploys the ingress
 rules for this app.
 
 ### Deploying to multiple contexts
 
 You can also specify `:context` as a list.  All K8S resources will then be deployed to each context in turn.
 
+### Using a custom `Deployment`, `Service` or `Ingress` template
+
+If you need to customise the templates beyond what the configuration options provide, you can place your
+own template in your project in the location `deploy/k8s/{resource}-{environment}.yaml`.  For example
+`deployment-prod.yaml` for a custom `Deployment` template.
+
+These files can include `EEx` templating and accept the same variables as the default templates (see `priv/templates`),
+e.g. `<%= @deployment_id>` or `<%= @docker_image %>` in the `Deployment` template.  N.B. The `@deployment_id`
+variable is an integer so it must be quoted in your template.
+
 ## TODO
 
 * Run `git push origin master:production` after deploy
 * Have option to ask for key press before deploying
-* If custom ingress `:host` is not relevant but should still deploy ingress
 * Support different environments e.g. `mix k8s.deploy staging` with an environment setting and overrides in config
 * Block until deploy complete
 * Support probes in deployment
