@@ -135,12 +135,17 @@ defmodule K8SDeploy.Deploy do
   end
 
   defp add_ingress(resources, config) do
-    # Only add ingress if the host is specified
-    case Config.config(config, :host) do
-      nil ->
+    case {resource_path("ingress", config, true), Config.config(config, :host)} do
+      # Skip the ingress if there is no custom template or no host is specified
+      {nil, nil} ->
         resources
 
-      host ->
+      # With a custom resource don't inject any vars
+      {_custom_resource, nil} ->
+        resources
+        |> add_resource("ingress", config, [])
+
+      {nil, host} ->
         resources
         |> add_resource("ingress", config,
           host: host,
