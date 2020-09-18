@@ -124,5 +124,3 @@ variable is an integer so it must be quoted in your template.
 * Have option to ask for key press before deploying
 * Support different environments e.g. `mix k8s.deploy staging` with an environment setting and overrides in config
 * Block until deploy complete
-* Support probes in deployment
-* BUG - image_pull_secrets mandatory

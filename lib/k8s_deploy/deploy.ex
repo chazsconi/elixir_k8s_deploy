@@ -118,7 +118,7 @@ defmodule K8SDeploy.Deploy do
     resources
     |> add_resource("deployment", config,
       docker_image: Config.build_config(config, :docker_image),
-      image_pull_secrets: Config.config!(config, :image_pull_secrets),
+      image_pull_secrets: Config.config(config, :image_pull_secrets),
       env_vars: Config.env_vars(config),
       probe_path: Config.config(config, :probe_path),
       configmap?: has_resource?(resources, "configmap")
@@ -163,7 +163,7 @@ defmodule K8SDeploy.Deploy do
     resources
     |> add_resource("migration-job", config,
       docker_image: Config.build_config(config, :docker_image),
-      image_pull_secrets: Config.config!(config, :image_pull_secrets),
+      image_pull_secrets: Config.config(config, :image_pull_secrets),
       env_vars: Config.env_vars(config),
       configmap?: has_resource?(resources, "configmap"),
       job_name: migration_job_name(config),
