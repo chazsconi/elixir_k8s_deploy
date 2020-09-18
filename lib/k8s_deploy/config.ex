@@ -128,8 +128,10 @@ defmodule K8SDeploy.Config do
       mod when is_atom(mod) ->
         {mod, :migrate, []}
 
-      {mod, fun, args} ->
+      {mod, fun, args} when is_atom(mod) and is_atom(fun) and is_list(args) ->
         {mod, fun, args}
+
+      _ ->
         raise ":migrator must be either a module with a :migrate/0 function or a mfa"
     end
   end
