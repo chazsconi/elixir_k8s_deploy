@@ -32,6 +32,24 @@ spec:
         <% end %>
         ports:
         - containerPort: 4000
+        <%= if @probe_path do %>
+        livenessProbe:
+          httpGet:
+            path: <%= @probe_path %>
+            port: 4000
+          failureThreshold: 5
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: <%= @probe_path %>
+            port: 4000
+          failureThreshold: 5
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+        <% end %>
         imagePullPolicy: Always
       <%= if @image_pull_secrets do %>
       imagePullSecrets:

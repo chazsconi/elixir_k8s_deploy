@@ -68,6 +68,8 @@ The following additional config values are available:
     * `PORT` - set to `4000`
     * `URL_HOST` - set to the `:host` value in the config (if set)
   * `:migrator` - Module name or mfa tuple for running migrations.  See *"Running Migrations"* below.
+  * `:probe_path` - URL path to be used for a K8S container `readinessProbe` and `livenessProbe`.  Specify a URL that returns a 200 without a login.
+  If not set, no probes are created.
 
 ### Using a ConfigMap for environment variables
 
@@ -123,3 +125,4 @@ variable is an integer so it must be quoted in your template.
 * Support different environments e.g. `mix k8s.deploy staging` with an environment setting and overrides in config
 * Block until deploy complete
 * Support probes in deployment
+* BUG - image_pull_secrets mandatory

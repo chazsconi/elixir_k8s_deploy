@@ -120,6 +120,7 @@ defmodule K8SDeploy.Deploy do
       docker_image: Config.build_config(config, :docker_image),
       image_pull_secrets: Config.config!(config, :image_pull_secrets),
       env_vars: Config.env_vars(config),
+      probe_path: Config.config(config, :probe_path),
       configmap?: has_resource?(resources, "configmap")
     )
   end
