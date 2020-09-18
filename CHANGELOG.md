@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2020-09-18
+### Added
+- Support `livenessProbe` and `readinessProbe`
+### Fixed
+- Fix bug with using mfa for `:migrator`
+- Fix `:image_pull_secrets` being mandatory.
+
 ## [0.2.1] - 2020-09-17
 ### Fixed
 - Allow for custom `Ingress` when `:host` not specified
