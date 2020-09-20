@@ -89,20 +89,19 @@ defmodule K8SDeploy.Config do
 
   @doc "If automatic redirection from non-www to www version of site should happen"
   def from_to_www_redirect?(context) do
-    case {config(context, :from_to_www_redirect), config(context, :host)} do
+    case {config(context, :from_to_www_redirect?), config(context, :host)} do
       {nil, "www." <> _} -> true
       {nil, _} -> false
-      {value, "www." <> _} -> value
-      {value, _} -> raise "from_to_www_redirect: #{value} but host does not start with www"
+      {value, _} -> value
     end
   end
 
   @doc "List of all hosts"
   def hosts(context) do
-    if config(context, :from_to_www_redirect, false) do
+    if from_to_www_redirect?(context) do
       case config(context, :host) do
         "www." <> suffix = host -> [host, suffix]
-        _ -> raise "from_to_www_redirect: true but host does not start with www"
+        host -> [host, "www." <> host]
       end
     else
       [config(context, :host)]

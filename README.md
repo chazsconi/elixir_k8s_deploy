@@ -62,7 +62,7 @@ mix help k8s.deploy
 
 The following additional config values are available:
 
-  * `:from_to_www_redirect?` - if your want the `Ingress` to perform an automatic redirection from the non-`www` version of your site to the `www` version. Defaults to `true` if the host starts with `www`.  Raises if set and host does not start with `www`.
+  * `:from_to_www_redirect?` - if your want the `Ingress` to perform an automatic redirection from the non-`www` version of your site to the `www` version or vice versa. Defaults to `true` if the host starts with `www`.  Specify the canonical version in `:host`.
   * `:env_vars` - Map of environment variables that will be set in the K8S `Deployment`. e.g. `%{"FOO" => "BAR"}`.  The following
   environment variables are automatically injected:
     * `PORT` - set to `4000`
