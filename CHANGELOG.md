@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2020-09-20
+### Fixed
+- Fix `:from_to_www_redirect?` to work also with redirection from `www` to non `www`
+
 ## [0.3.0] - 2020-09-18
 ### Added
 - Support `livenessProbe` and `readinessProbe`

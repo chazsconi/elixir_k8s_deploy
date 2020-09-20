@@ -4,7 +4,7 @@ defmodule K8SDeploy.MixProject do
   def project do
     [
       app: :k8s_deploy,
-      version: "0.3.0",
+      version: "0.3.1",
       elixir: "~> 1.9",
       start_permanent: false,
       deps: deps(),
