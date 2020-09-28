@@ -68,8 +68,7 @@ The following additional config values are available:
     * `PORT` - set to `4000`
     * `URL_HOST` - set to the `:host` value in the config (if set)
   * `:migrator` - Module name or mfa tuple for running migrations.  See *"Running Migrations"* below.
-  * `:probe_path` - URL path to be used for a K8S container `readinessProbe` and `livenessProbe`.  Specify a URL that returns a 200 without a login.
-  If not set, no probes are created.
+  * `:probe_path` - URL path (without host or port) to be used for a K8S container `readinessProbe` and `livenessProbe`. Specify a URL that returns a 200 without a login.  In most cases `"/"` should be suitable. If not set, no probes are created.
 
 ### Using a ConfigMap for environment variables
 
