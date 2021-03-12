@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2021-11-03
+### Breaking changes
+- The configuration is now in the `k8s_deploy:` entry in the `project/0` within `mix.exs` instead of in `dev.exs`.
+See [README.md](README.md) for details.
+
 ### Fixed
 - Clarify use of `:probe_path`
 
