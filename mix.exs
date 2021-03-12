@@ -26,7 +26,7 @@ defmodule K8SDeploy.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:docker_build, "~> 0.3.3", only: :dev},
+      {:docker_build, "~> 0.4.0", only: :dev},
       {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end

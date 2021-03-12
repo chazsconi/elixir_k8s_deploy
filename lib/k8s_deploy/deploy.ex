@@ -5,7 +5,7 @@ defmodule K8SDeploy.Deploy do
 
   def run(opts) do
     Logger.debug("Opts: " <> inspect(opts))
-    config = Config.load_from_application_env(opts)
+    config = Config.load(opts)
 
     Logger.debug("Config: " <> inspect(config))
     Logger.debug("Appdir: " <> Application.app_dir(:k8s_deploy))
@@ -46,7 +46,7 @@ defmodule K8SDeploy.Deploy do
 
   @doc "Cleans all migrations for the app"
   def clean_all_migrations(args) do
-    config = Config.load_from_application_env(args)
+    config = Config.load(args)
 
     each_context(config, fn context ->
       print_step("Cleaning migrations in context: #{context}")

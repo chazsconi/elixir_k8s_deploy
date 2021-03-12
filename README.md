@@ -30,16 +30,26 @@ Install and configure `docker_build` to build your docker image for you.
 
 ## Basic Use
 
-Create the following entries in `config/dev.exs`.  As you will run the `mix` tasks in the
-development environment you should only add them here.
+Add the following entry in `mix.exs`:
 
 ```elixir
-# config/dev.exs
-config :k8s_deploy, K8SDeploy.Deploy,
-  context: "my-k8s-cluster.com", # The kubectl context name in kubectl
-  image_pull_secrets: ["my-pull-secret"], # Unless a public docker image is used this must be set up before
-  cert_manager_issuer: "letsencrypt-prod", # This needs to be set up before
-  host: "www.mysite.com" # HTTPS host
+# mix.exs
+  def project do
+    [
+      ...
+      k8s_deploy: k8s_deploy(),
+      ...
+    ]
+  end
+
+  defp k8s_deploy do
+    [
+      context: "my-k8s-cluster.com", # The kubectl context name in kubectl
+      image_pull_secrets: ["my-pull-secret"], # Unless a public docker image is used this must be set up before
+      cert_manager_issuer: "letsencrypt-prod", # This needs to be set up before
+      host: "www.mysite.com" # HTTPS host
+    ]
+  end
 ```
 
 ### Deploy

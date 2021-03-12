@@ -4,13 +4,21 @@ defmodule K8SDeploy.Config do
   defstruct base_config: [], plugin_configs: [], build_config: nil
 
   @doc """
-  Load the config from the application env
+  Load the config from the mix project
 
   ## Options
    * `env` - environment to be used.  Defaults to `prod`
   """
-  def load_from_application_env(opts) do
-    config = Application.fetch_env!(:k8s_deploy, K8SDeploy.Deploy)
+  def load(opts) do
+    config =
+      case Mix.Project.config()[:k8s_deploy] do
+        nil ->
+          Mix.raise("Missing `:k8s_deploy` entry in `project/0` in `mix.exs`")
+
+        config ->
+          config
+      end
+
     env = Keyword.fetch!(opts, :env)
 
     plugin_configs =
@@ -32,7 +40,7 @@ defmodule K8SDeploy.Config do
     %Config{
       base_config: base_config,
       plugin_configs: plugin_configs,
-      build_config: DockerBuild.Config.load_from_application_env(opts)
+      build_config: DockerBuild.Config.load(opts)
     }
   end
 
