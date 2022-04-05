@@ -31,6 +31,7 @@ defmodule K8SDeploy.Config do
     base_config =
       config
       |> Keyword.delete(:plugins)
+      |> validate_cert_manager_issuer()
       |> Keyword.put(:env, env)
       |> Keyword.put(
         :deployment_id,
@@ -89,6 +90,9 @@ defmodule K8SDeploy.Config do
   @doc "Name of the app"
   def app_name(context), do: config(context, :app_name, build_config(context, :app_name))
 
+  @doc "Namespace (defaults to `default`)"
+  def namespace(context), do: config(context, :namespace, "default")
+
   @doc "deployment_id - generated from datestamp"
   def deployment_id(context), do: config(context, :deployment_id)
 
@@ -140,6 +144,25 @@ defmodule K8SDeploy.Config do
 
       _ ->
         raise ":migrator must be either a module with a :migrate/0 function or a mfa"
+    end
+  end
+
+  defp validate_cert_manager_issuer(config) do
+    case {config[:host], config[:cert_manager_issuer], config[:cert_manager_cluster_issuer]} do
+      {nil, nil, nil} ->
+        config
+
+      {_, nil, nil} ->
+        Mix.raise("No :cert_maanger_issuer or :cert_manager_cluster_issue specified")
+
+      {_, nil, _} ->
+        config
+
+      {_, _, nil} ->
+        config
+
+      {_, _, _} ->
+        Mix.raise("Both :cert_maanger_issuer and :cert_manager_cluster_issue specified")
     end
   end
 end

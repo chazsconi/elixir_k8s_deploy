@@ -1,14 +1,20 @@
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: <%= @app_name %>-ingress
   annotations:
+    <%= if @cert_manager_issuer do %>
     cert-manager.io/issuer: <%= @cert_manager_issuer %>
+    <% end %>
+    <%= if @cert_manager_cluster_issuer do %>
+    cert-manager.io/cluster-issuer: <%= @cert_manager_cluster_issuer %>
+    <% end %>
     <%= if @from_to_www_redirect? do %>
     nginx.ingress.kubernetes.io/from-to-www-redirect: 'true'
     <% end %>
 spec:
+  ingressClassName: nginx
   tls:
   - hosts:
     <%= for host <- @hosts do %>
@@ -20,6 +26,9 @@ spec:
     http:
       paths:
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: <%= @app_name %>-service
-          servicePort: 80
+          service:
+            name: <%= @app_name %>-service
+            port:
+              number: 80

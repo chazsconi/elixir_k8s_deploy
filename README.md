@@ -2,16 +2,16 @@
 
 Library for deploying Elixir web apps to Kubernetes.  Used in combination with [`docker_build`](https://hex.pm/packages/docker_build) library.
 
-It will build a docker image of your app, push it and then deploy it to K8S by creating a K8S `Deployment`, `Service` and `Ingress` for your app. It will also request a *Letsencrypt* SSL cert for your app.
+It will build a docker image of your app, push it and then deploy it to K8S by creating a K8S `Deployment`, `Service` and `Ingress` for your app. It will also request a SSL cert for your app using [Cert manager](https://cert-manager.io).  This typically is used to obtain *Letsencrypt* certificates but can be used with other providers.
 
 ## Prerequisites
 
-  * A K8S cluster
-  * The K8S cluster installed and configured with [Cert manager](https://cert-manager.io) to issue *Letsencrypt* SSL certificates
+  * A K8S cluster with K8S >= v1.19
+  * The K8S cluster installed with [Cert manager](https://cert-manager.io) and a `ClusterIssuer` or `Issuer` configured.
   * `kubectl` installed and configured to access your K8S server
   * A Docker registry available for your image.  *Gitlab* currently provides a limited
   free private registry.
-  * Pull secrets configured on your cluster to access the image on the Docker registry
+  * Pull secrets configured on in your cluster namespace to access the image on the Docker registry
 
 ## Installation
 
@@ -20,7 +20,7 @@ Add to `mix.exs`:
 ```elixir
 def deps do
   [
-    {:k8s_deploy, "~> 0.1.0", runtime: false, only: :dev}
+    {:k8s_deploy, "~> 0.5.0", runtime: false, only: :dev}
   ]
 end
 ```
@@ -46,7 +46,7 @@ Add the following entry in `mix.exs`:
     [
       context: "my-k8s-cluster.com", # The kubectl context name in kubectl
       image_pull_secrets: ["my-pull-secret"], # Unless a public docker image is used this must be set up before
-      cert_manager_issuer: "letsencrypt-prod", # This needs to be set up before
+      cert_manager_cluster_issuer: "letsencrypt-cluster-prod", # This needs to be set up before.
       host: "www.mysite.com" # HTTPS host
     ]
   end
@@ -72,6 +72,8 @@ mix help k8s.deploy
 
 The following additional config values are available:
 
+  * `:namespace` - the K8S namespace to use.  Must be set up before.  Defaults to `default`.
+  * `:cert_manager_issuer` - can be used instead of `:cert_manager_cluster_issuer` for a namespaced issuer.
   * `:from_to_www_redirect?` - if your want the `Ingress` to perform an automatic redirection from the non-`www` version of your site to the `www` version or vice versa. Defaults to `true` if the host starts with `www`.  Specify the canonical version in `:host`.
   * `:env_vars` - Map of environment variables that will be set in the K8S `Deployment`. e.g. `%{"FOO" => "BAR"}`.  The following
   environment variables are automatically injected:
@@ -133,3 +135,4 @@ variable is an integer so it must be quoted in your template.
 * Have option to ask for key press before deploying
 * Support different environments e.g. `mix k8s.deploy staging` with an environment setting and overrides in config
 * Block until deploy complete
+* Check that cert issuers exist before continuing

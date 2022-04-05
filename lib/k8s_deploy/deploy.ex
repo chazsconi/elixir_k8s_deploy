@@ -51,7 +51,8 @@ defmodule K8SDeploy.Deploy do
     each_context(config, fn context ->
       print_step("Cleaning migrations in context: #{context}")
 
-      cmd = "kubectl --context=#{context} delete job -l app=#{Config.app_name(config)}-migrate"
+      cmd =
+        "kubectl --context=#{context} --namespace=#{Config.namespace(config)} delete job -l app=#{Config.app_name(config)}-migrate"
 
       shell_cmd(cmd)
     end)
@@ -61,7 +62,8 @@ defmodule K8SDeploy.Deploy do
     each_context(config, fn context ->
       print_step("Cleaning migrations context: #{context}")
 
-      cmd = "kubectl --context=#{context} delete job #{migration_job_name(config)}"
+      cmd =
+        "kubectl --context=#{context} --namespace=#{Config.namespace(config)} delete job #{migration_job_name(config)}"
 
       shell_cmd(cmd)
     end)
@@ -72,7 +74,7 @@ defmodule K8SDeploy.Deploy do
       print_step("Waiting for migrations to complete in context: #{context}")
 
       cmd =
-        "kubectl --context=#{context} wait --timeout=60s " <>
+        "kubectl --context=#{context} --namespace=#{Config.namespace(config)} wait --timeout=60s " <>
           "--for=condition=complete job/#{migration_job_name(config)}"
 
       shell_cmd(cmd)
@@ -150,7 +152,8 @@ defmodule K8SDeploy.Deploy do
         resources
         |> add_resource("ingress", config,
           host: host,
-          cert_manager_issuer: Config.config!(config, :cert_manager_issuer),
+          cert_manager_issuer: Config.config(config, :cert_manager_issuer),
+          cert_manager_cluster_issuer: Config.config(config, :cert_manager_cluster_issuer),
           from_to_www_redirect?: Config.from_to_www_redirect?(config),
           hosts: Config.hosts(config)
         )
@@ -233,8 +236,8 @@ defmodule K8SDeploy.Deploy do
       print_step("Deploying to context: #{context}")
 
       cmd =
-        "kubectl --context=#{context} apply -f #{path}" <>
-          if dry_run?, do: " --dry-run=true", else: ""
+        "kubectl --context=#{context} --namespace=#{Config.namespace(config)} apply -f #{path}" <>
+          if dry_run?, do: " --dry-run=client", else: ""
 
       shell_cmd(cmd)
     end)
