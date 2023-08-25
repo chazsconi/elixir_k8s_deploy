@@ -123,6 +123,7 @@ defmodule K8SDeploy.Deploy do
       image_pull_secrets: Config.config(config, :image_pull_secrets),
       env_vars: Config.env_vars(config),
       probe_path: Config.config(config, :probe_path),
+      probe_initial_delay_seconds: Config.config(config, :probe_initial_delay_seconds, 10),
       configmap?: has_resource?(resources, "configmap")
     )
   end

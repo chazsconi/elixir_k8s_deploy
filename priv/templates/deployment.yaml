@@ -37,7 +37,7 @@ spec:
             path: <%= @probe_path %>
             port: 4000
           failureThreshold: 5
-          initialDelaySeconds: 10
+          initialDelaySeconds: <%= @probe_initial_delay_seconds %>
           periodSeconds: 5
           timeoutSeconds: 5
         readinessProbe:
@@ -45,7 +45,7 @@ spec:
             path: <%= @probe_path %>
             port: 4000
           failureThreshold: 5
-          initialDelaySeconds: 10
+          initialDelaySeconds: <%= @probe_initial_delay_seconds %>
           periodSeconds: 5
           timeoutSeconds: 5
         <% end %>
