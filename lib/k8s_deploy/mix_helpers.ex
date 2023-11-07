@@ -20,7 +20,7 @@ defmodule K8SDeploy.MixHelpers do
     if "--debug" in flags do
       Logger.configure(level: :debug)
     else
-      Logger.configure(level: :warn)
+      Logger.configure(level: :warning)
     end
 
     Logger.debug("Using env #{env}")
