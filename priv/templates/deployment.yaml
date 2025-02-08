@@ -50,6 +50,9 @@ spec:
           timeoutSeconds: 5
         <% end %>
         imagePullPolicy: Always
+        <%= if @resources do %>
+        resources: <%= @resources %>
+        <% end %>
       <%= if @image_pull_secrets do %>
       imagePullSecrets:
       <%= for secret <- @image_pull_secrets do %>

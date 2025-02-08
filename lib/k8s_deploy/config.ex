@@ -32,6 +32,7 @@ defmodule K8SDeploy.Config do
       config
       |> Keyword.delete(:plugins)
       |> validate_cert_manager_issuer()
+      |> validate_and_parse_resources()
       |> Keyword.put(:env, env)
       |> Keyword.put(
         :deployment_id,
@@ -130,6 +131,15 @@ defmodule K8SDeploy.Config do
     |> Map.merge(config(context, :env_vars, %{}))
   end
 
+  @doc "K8S container resources"
+  def resources(context) do
+    case config(context, :resources) do
+      nil -> nil
+      # Encoded as JSON so we don't need to depend on a YAML encoder
+      resources -> JSON.encode!(resources)
+    end
+  end
+
   @doc "Gets the mfa for the migrator"
   def migrator(context) do
     case config(context, :migrator) do
@@ -144,6 +154,43 @@ defmodule K8SDeploy.Config do
 
       _ ->
         raise ":migrator must be either a module with a :migrate/0 function or a mfa"
+    end
+  end
+
+  defp validate_and_parse_resources(config) do
+    case config[:resources] do
+      nil ->
+        config
+
+      resources when is_list(resources) ->
+        case Keyword.validate(resources, [:requests, :limits]) do
+          {:error, _} ->
+            Mix.raise("Invalid :resources config.  Specify only :requests and :limits keys")
+
+          {:ok, _} ->
+            Keyword.put(
+              config,
+              :resources,
+              %{}
+              |> add_resource(:requests, resources[:requests])
+              |> add_resource(:limits, resources[:limits])
+            )
+        end
+
+      _ ->
+        Mix.raise("Invalid :resources config")
+    end
+  end
+
+  defp add_resource(%{} = acc, _, nil), do: acc
+
+  defp add_resource(%{} = acc, key, values) do
+    case Keyword.validate(values, [:cpu, :memory]) do
+      {:error, _} ->
+        Mix.raise("Invalid :resources config for #{key}.  Specify only `cpu` and `memory` keys")
+
+      {:ok, _} ->
+        Map.put(acc, key, Map.new(values))
     end
   end
 

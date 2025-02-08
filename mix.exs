@@ -4,8 +4,9 @@ defmodule K8SDeploy.MixProject do
   def project do
     [
       app: :k8s_deploy,
-      version: "0.7.0",
-      elixir: "~> 1.11",
+      version: "0.8.0",
+      # Only works on >= 1.18 because needs JSON encoder
+      elixir: "~> 1.18",
       start_permanent: false,
       deps: deps(),
       description: description(),
@@ -25,7 +26,7 @@ defmodule K8SDeploy.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:docker_build, "~> 0.4.0", only: :dev},
+      {:docker_build, "~> 0.11", only: [:dev, :test]},
       {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end

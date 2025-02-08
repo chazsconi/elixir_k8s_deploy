@@ -82,6 +82,20 @@ The following additional config values are available:
   * `:migrator` - Module name or mfa tuple for running migrations.  See *"Running Migrations"* below.
   * `:probe_path` - URL path (without host or port) to be used for a K8S container `readinessProbe` and `livenessProbe`. Specify a URL that returns a 200 without a login.  In most cases `"/"` should be suitable. If not set, no probes are created.
   * `:probe_initial_delay_seconds` - Used for  `readinessProbe` and `livenessProbe` if a `:probe_path` is set.  Defaults to 10.
+  * `:resources` - Specify memory and CPU request and limit values.  e.g.
+
+        resources: [
+          requests: [
+            cpu: "100m",
+            memory: "128Mi"
+          ],
+          limits: [
+            cpu: "200m",
+            memory: "256Mi"
+          ]
+        ]
+
+    All the keys are optional, although if you specify `resources` you must specify at least one value.
 
 ### Using a ConfigMap for environment variables
 
