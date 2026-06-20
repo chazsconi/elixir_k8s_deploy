@@ -4,7 +4,7 @@ defmodule K8SDeploy.MixProject do
   def project do
     [
       app: :k8s_deploy,
-      version: "0.8.0",
+      version: "0.9.0",
       # Only works on >= 1.18 because needs JSON encoder
       elixir: "~> 1.18",
       start_permanent: false,
