@@ -19,10 +19,16 @@ spec:
       containers:
       - name: <%= @app_name %>
         image: <%= @docker_image %>
-        <%= if @configmap? do %>
+        <%= if @configmap? or @secrets? do %>
         envFrom:
+        <%= if @configmap? do %>
         - configMapRef:
             name: <%= @app_name %>-configmap
+        <% end %>
+        <%= if @secrets? do %>
+        - secretRef:
+            name: <%= @app_name %>-secrets
+        <% end %>
         <% end %>
         env:
         <%= for {k, v} <- @env_vars do %>

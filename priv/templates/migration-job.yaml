@@ -21,10 +21,16 @@ spec:
         image: <%= @docker_image %>
         imagePullPolicy: Always
         command: ["/opt/app/bin/<%= @app_name %>", "eval", "<%= @migrate_expr %>"]
-        <%= if @configmap? do %>
+        <%= if @configmap? or @secrets? do %>
         envFrom:
+        <%= if @configmap? do %>
         - configMapRef:
             name: <%= @app_name %>-configmap
+        <% end %>
+        <%= if @secrets? do %>
+        - secretRef:
+            name: <%= @app_name %>-secrets
+        <% end %>
         <% end %>
         env:
         <%= for {k, v} <- @env_vars do %>

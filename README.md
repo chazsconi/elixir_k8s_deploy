@@ -144,6 +144,73 @@ These files can include `EEx` templating and accept the same variables as the de
 e.g. `<%= @deployment_id>` or `<%= @docker_image %>` in the `Deployment` template.  N.B. The `@deployment_id`
 variable is an integer so it must be quoted in your template.
 
+### Secrets
+
+Secrets can be encrypted at rest with SOPS.
+
+#### Setup
+
+1. Install packages:
+```sh
+brew install sops age
+```
+2. Create an age key pair outside the repo:
+```sh
+mkdir -p ~/.config/sops/age/
+age-keygen -o ~/.config/sops/age/keys.txt
+```
+
+4. Create the file `.sops.yaml` in the root of your repo with the public key output
+  ```yaml
+  creation_rules:
+    - path_regex: secrets/.*\.yaml$
+      age: <public key output by age-keygen>
+  ```
+N.B. SOPS picks up the file using the SOPS_AGE_KEY_FILE env var.
+
+5. Protect the file from access by non-root:
+```sh
+# Use root:root on linux
+sudo chown root:wheel ~/.config/sops/age/keys.txt
+sudo chmod 600 ~/.config/sops/age/keys.txt
+```
+
+6. Create a K8S secrets file in `/k8s/deploy/secret-prod.yaml` like this.  Don't commit yet.
+
+```yaml
+kind: Secret
+metadata:
+    name: myapp-secrets
+type: Opaque
+stringData:
+    SECRET1: secret1_value
+    SECRET2: secret2_value
+```
+
+7. Encrypt the file initially
+```sh
+SOPS_AGE_KEY=$(sudo cat ~/.config/sops/age/keys.txt) sops -e -i deploy/k8s/secrets-prod.yaml
+```
+The file can now be committed.
+
+#### Workflows
+
+##### Edit the file to change or add a new secret
+
+```sh
+SOPS_AGE_KEY=$(sudo cat ~/.config/sops/age/keys.txt) sops deploy/k8s/secrets-prod.yaml
+```
+
+##### Deploy skipping secrets (doesn't need sudo)
+```sh
+mix k8s.deploy --skip-secrets
+```
+
+##### Deploy including secrets
+```sh
+sudo mix k8s.deploy
+```
+
 ## TODO
 
 * Run `git push origin master:production` after deploy

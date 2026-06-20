@@ -84,6 +84,7 @@ defmodule K8SDeploy.Deploy do
   defp run_migrations(config, dry_run?, clean_migrations?) do
     []
     |> add_configmap(config)
+    |> add_secrets(config)
     |> add_migration_job(config)
     |> kubectl_apply(config, dry_run?)
 
@@ -96,6 +97,7 @@ defmodule K8SDeploy.Deploy do
   defp deploy(config, dry_run?) do
     []
     |> add_configmap(config)
+    |> add_secrets(config)
     |> add_deployment(config)
     |> add_service(config)
     |> add_ingress(config)
@@ -114,6 +116,8 @@ defmodule K8SDeploy.Deploy do
       ],
       trim: true
     )
+    # Clean up any extra newlines that may have been introduced by EEx templating
+    |> String.replace(~r/\n{2,}/, "\n")
   end
 
   defp add_deployment(resources, config) do
@@ -124,7 +128,8 @@ defmodule K8SDeploy.Deploy do
       env_vars: Config.env_vars(config),
       probe_path: Config.config(config, :probe_path),
       probe_initial_delay_seconds: Config.config(config, :probe_initial_delay_seconds, 10),
-      configmap?: has_resource?(resources, "configmap"),
+      configmap?: has_resource?(config, "configmap"),
+      secrets?: has_resource?(config, "secrets"),
       resources: Config.resources(config)
     )
   end
@@ -137,6 +142,15 @@ defmodule K8SDeploy.Deploy do
   defp add_configmap(resources, config) do
     resources
     |> add_resource("configmap", config, [], optional?: true)
+  end
+
+  defp add_secrets(resources, config) do
+    if Config.config!(config, :deploy_secrets?) do
+      add_resource_with_sops(resources, "secrets", config, optional?: true)
+    else
+      print("Skipping secrets deployment")
+      resources
+    end
   end
 
   defp add_ingress(resources, config) do
@@ -170,7 +184,8 @@ defmodule K8SDeploy.Deploy do
       docker_image: Config.build_config(config, :docker_image),
       image_pull_secrets: Config.config(config, :image_pull_secrets),
       env_vars: Config.env_vars(config),
-      configmap?: has_resource?(resources, "configmap"),
+      configmap?: has_resource?(config, "configmap"),
+      secrets?: has_resource?(config, "secrets"),
       job_name: migration_job_name(config),
       migrate_expr: "apply(#{inspect(mod)}, #{inspect(fun)}, #{inspect(args)})"
     )
@@ -196,6 +211,44 @@ defmodule K8SDeploy.Deploy do
     end
   end
 
+  defp add_resource_with_sops(resources, name, config, opts) do
+    case resource_path(name, config, opts[:optional?]) do
+      nil ->
+        resources
+
+      path ->
+        sops_keys_path = Path.expand("~/.config/sops/age/keys.txt")
+
+        case File.read(sops_keys_path) do
+          {:ok, _} ->
+            :ok
+
+          {:error, :eacces} ->
+            Mix.raise(
+              "Failed to read SOPS keys to deploy #{name} from #{sops_keys_path}: Permission denied - try running with sudo or use --skip-secrets"
+            )
+
+          {:error, reason} ->
+            Mix.raise(
+              "Failed to read SOPS keys to deploy #{name} from #{sops_keys_path}: #{reason}"
+            )
+        end
+
+        {decrypted, exit_code} =
+          System.cmd(
+            "sops",
+            ["-d", path],
+            env: [{"SOPS_AGE_KEY_FILE", sops_keys_path}]
+          )
+
+        if exit_code != 0 do
+          Mix.raise("SOPS decryption failed for #{path}")
+        end
+
+        resources ++ [{name, "---\n" <> decrypted}]
+    end
+  end
+
   defp verify_yaml_format(contents, path) do
     case contents do
       "---\n" <> _ -> contents
@@ -203,8 +256,9 @@ defmodule K8SDeploy.Deploy do
     end
   end
 
-  defp has_resource?(resources, search) do
-    Enum.any?(resources, fn {name, _contents} -> name == search end)
+  defp has_resource?(config, name) do
+    project_path = "deploy/k8s/#{name}-#{Config.config(config, :env)}.yaml"
+    File.exists?(project_path)
   end
 
   defp resource_path(name, config, optional?) do

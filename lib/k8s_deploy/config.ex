@@ -20,6 +20,7 @@ defmodule K8SDeploy.Config do
       end
 
     env = Keyword.fetch!(opts, :env)
+    deploy_secrets? = Keyword.get(opts, :deploy_secrets?, true)
 
     plugin_configs =
       (config[:plugins] || [])
@@ -34,6 +35,7 @@ defmodule K8SDeploy.Config do
       |> validate_cert_manager_issuer()
       |> validate_and_parse_resources()
       |> Keyword.put(:env, env)
+      |> Keyword.put(:deploy_secrets?, deploy_secrets?)
       |> Keyword.put(
         :deployment_id,
         DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string()

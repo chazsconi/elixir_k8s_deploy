@@ -12,6 +12,8 @@ defmodule Mix.Tasks.K8s.Deploy do
    * `--skip-migrate` - will skip the migrations
    * `--clean-migrations` - will delete the migration jobs after running (default false)
    * `--skip-deploy` - will just run migrations without deploying
+   * `--skip-secrets` - will skip applying secrets to the cluster.  This is useful as depnding on your SOPS set up you may need sudo to
+      decrypt them.  The deployment will still reference existing secrets.
    * `--dry-run` - will execute `kubectl apply` as a dry-run
    * `--debug` - outputs extra debugging info
   """
@@ -32,6 +34,7 @@ defmodule Mix.Tasks.K8s.Deploy do
       migrate?: "--skip-migrate" not in flags,
       clean_migrations?: "--clean-migrations" in flags,
       deploy?: "--skip-deploy" not in flags,
+      deploy_secrets?: "--skip-secrets" not in flags,
       dry_run?: "--dry-run" in flags
     )
   end
