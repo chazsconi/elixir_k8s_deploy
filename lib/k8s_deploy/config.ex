@@ -142,6 +142,58 @@ defmodule K8SDeploy.Config do
     end
   end
 
+  @doc "K8S volumes"
+  def volumes(context) do
+    case config(context, :volumes) do
+      nil -> nil
+      # Encoded as JSON so we don't need to depend on a YAML encoder
+      volumes ->
+        volumes
+        |> camelize_keys()
+        |> JSON.encode!()
+    end
+  end
+
+  @doc "K8S volume mounts"
+  def volume_mounts(context) do
+    case config(context, :volume_mounts) do
+      nil -> nil
+      # Encoded as JSON so we don't need to depend on a YAML encoder
+      mounts ->
+        mounts
+        |> camelize_keys()
+        |> JSON.encode!()
+    end
+  end
+
+  defp camelize_keys(map) when is_map(map) do
+    Map.new(map, fn {k, v} -> {camelize_key(k), camelize_keys(v)} end)
+  end
+
+  defp camelize_keys(list) when is_list(list) do
+    Enum.map(list, &camelize_keys/1)
+  end
+
+  defp camelize_keys(val), do: val
+
+  defp camelize_key(key) when is_atom(key) do
+    key
+    |> Atom.to_string()
+    |> camelize_string()
+  end
+
+  defp camelize_key(key) when is_binary(key), do: camelize_string(key)
+
+  defp camelize_string(string) do
+    case String.split(string, "_") do
+      [first | rest] ->
+        first <> Enum.map_join(rest, &String.capitalize/1)
+
+      [] ->
+        ""
+    end
+  end
+
   @doc "Gets the mfa for the migrator"
   def migrator(context) do
     case config(context, :migrator) do

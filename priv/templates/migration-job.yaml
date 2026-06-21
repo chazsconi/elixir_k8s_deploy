@@ -8,7 +8,6 @@ metadata:
 spec:
   template:
     spec:
-      restartPolicy: Never
       activeDeadlineSeconds: 600
       <%= if @image_pull_secrets do %>
       imagePullSecrets:
@@ -16,11 +15,18 @@ spec:
       - name: <%= secret %>
       <% end %>
       <% end %>
+      <%= if @volumes do %>
+      volumes: <%= @volumes %>
+      <% end %>
+      restartPolicy: Never
       containers:
       - name: migrate
         image: <%= @docker_image %>
         imagePullPolicy: Always
         command: ["/opt/app/bin/<%= @app_name %>", "eval", "<%= @migrate_expr %>"]
+        <%= if @volume_mounts do %>
+        volumeMounts: <%= @volume_mounts %>
+        <% end %>
         <%= if @configmap? or @secrets? do %>
         envFrom:
         <%= if @configmap? do %>

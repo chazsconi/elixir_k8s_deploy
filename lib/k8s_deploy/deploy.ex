@@ -130,7 +130,9 @@ defmodule K8SDeploy.Deploy do
       probe_initial_delay_seconds: Config.config(config, :probe_initial_delay_seconds, 10),
       configmap?: has_resource?(config, "configmap"),
       secrets?: has_resource?(config, "secrets"),
-      resources: Config.resources(config)
+      resources: Config.resources(config),
+      volumes: Config.volumes(config),
+      volume_mounts: Config.volume_mounts(config)
     )
   end
 
@@ -187,7 +189,9 @@ defmodule K8SDeploy.Deploy do
       configmap?: has_resource?(config, "configmap"),
       secrets?: has_resource?(config, "secrets"),
       job_name: migration_job_name(config),
-      migrate_expr: "apply(#{inspect(mod)}, #{inspect(fun)}, #{inspect(args)})"
+      migrate_expr: "apply(#{inspect(mod)}, #{inspect(fun)}, #{inspect(args)})",
+      volumes: Config.volumes(config),
+      volume_mounts: Config.volume_mounts(config)
     )
   end
 

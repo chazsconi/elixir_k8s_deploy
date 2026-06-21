@@ -97,6 +97,34 @@ The following additional config values are available:
 
     All the keys are optional, although if you specify `resources` you must specify at least one value.
 
+  * `:volumes` and `:volume_mounts` - Lists of maps that specify Kubernetes volumes and volume mounts. These can be used to mount certificates or other secrets as files. N.B. Use snake case here.  It will be automatically converted to camelcase before deployment e.g.
+
+        volume_mounts: [
+          %{
+            name: "config-volume",
+            mount_path: "/etc/config"
+          },
+          %{
+            name: "cert-volume",
+            mount_path: "/etc/certs",
+            read_only: true
+          }
+        ],
+        volumes: [
+          %{
+            name: "config-volume",
+            config_map: %{
+              name: "my-config"
+            }
+          },
+          %{
+            name: "cert-volume",
+            secret: %{
+              secret_name: "my-ssl-cert"
+            }
+          }
+        ]
+
 ### Using a ConfigMap for environment variables
 
 Instead of providing environment variables via the `:env_vars` key, you can provide a K8S `ConfigMap` in the

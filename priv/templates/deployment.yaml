@@ -37,6 +37,9 @@ spec:
         <% end %>
         ports:
         - containerPort: 4000
+        <%= if @volume_mounts do %>
+        volumeMounts: <%= @volume_mounts %>
+        <% end %>
         <%= if @probe_path do %>
         livenessProbe:
           httpGet:
@@ -64,5 +67,8 @@ spec:
       <%= for secret <- @image_pull_secrets do %>
       - name: <%= secret %>
       <% end %>
+      <% end %>
+      <%= if @volumes do %>
+      volumes: <%= @volumes %>
       <% end %>
       restartPolicy: Always
